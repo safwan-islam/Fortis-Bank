@@ -15,9 +15,9 @@
 
 ## 📌 About
 
-Fortis Bank is a desktop banking system built with a clean **3-layer architecture** (Business / Data / UI). It supports core banking operations — deposits, withdrawals, transfers, and transaction history — with persistence handled through **DAO and Repository patterns** over Oracle SQL, keeping data access logic fully decoupled from the business layer.
+Fortis Bank is a desktop banking system built with a clean **3-layer architecture** (Business / Data / UI). It supports 5 account types, 3 transaction types, and a notification system — all persisted through **DAO and Repository patterns** over Oracle SQL with JDBC.
 
-The Swing GUI connects directly to the JDBC backend through typed repository classes that centralize all queries, eliminating boilerplate across the application.
+The app has two Swing interfaces: a **client portal** (login with PIN, manage accounts, view transactions) and a **manager dashboard** (create/remove clients, open/close accounts).
 
 ---
 
@@ -26,42 +26,79 @@ The Swing GUI connects directly to the JDBC backend through typed repository cla
 | Layer | Technology |
 |:------|:-----------|
 | **Language** | Java |
-| **Database** | Oracle SQL |
+| **Database** | Oracle SQL (10 tables) |
 | **Connectivity** | JDBC |
-| **UI** | Swing |
+| **UI** | Swing (Login + Client + Manager views) |
 | **Architecture** | 3-Layer (Business / Data / UI) |
-| **Patterns** | DAO, Repository |
+| **Patterns** | DAO, Repository, Interface-based contracts |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────┐
-│           UI Layer              │
-│         (Swing GUI)             │
-├─────────────────────────────────┤
-│        Business Layer           │
-│    (Services, Validation)       │
-├─────────────────────────────────┤
-│          Data Layer             │
-│   (DAO / Repository / JDBC)     │
-├─────────────────────────────────┤
-│         Oracle SQL DB           │
-└─────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│                  UI Layer                     │
+│  BankAppLoginSwing → BankAppClientSwing       │
+│                    → BankAppGestionnaireSwing  │
+├──────────────────────────────────────────────┤
+│               Business Layer                  │
+│  BankAccount (abstract)                       │
+│  ├── CheckingAccount                          │
+│  ├── SavingsAccount                           │
+│  ├── CreditAccount                            │
+│  ├── LineOfCredit                             │
+│  └── ForeignCurrencyAccount                   │
+│  BankClient (IBankClient)                     │
+│  BankManager (IBankManager)                   │
+│  Transaction (abstract)                       │
+│  ├── Deposit                                  │
+│  ├── Withdrawal                               │
+│  └── Transfer                                 │
+│  Notification (INotification)                 │
+├──────────────────────────────────────────────┤
+│                Data Layer                     │
+│  DatabaseConnection                           │
+│  BankAccountDAO  (IBankAccountRepository)     │
+│  BankClientDAO   (IBankClientRepository)      │
+│  BankManagerDAO  (IBankManagerRepository)     │
+│  TransactionDAO  (ITransactionRepository)     │
+│  NotificationDAO (INotificationRepository)    │
+├──────────────────────────────────────────────┤
+│              Oracle SQL Database              │
+└──────────────────────────────────────────────┘
 ```
+
+---
+
+## 🗄️ Database Schema
+
+**10 tables** on Oracle SQL:
+
+| Table | Description |
+|:------|:------------|
+| `BankClient` | Clients (name, PIN, address, email, phone) |
+| `BankManager` | Managers with role |
+| `BankAccount` | Base account (balance, creation date, client FK) |
+| `CheckingAccount` | Extends BankAccount — free transactions limit |
+| `SavingsAccount` | Extends BankAccount — interest rate |
+| `CreditAccount` | Extends BankAccount — credit limit + interest |
+| `LineOfCredit` | Extends BankAccount — credit limit + interest |
+| `ForeignCurrencyAccount` | Extends BankAccount — currency + exchange rate |
+| `Transaction` | Deposit / Withdrawal / Transfer with destination account |
+| `Notification` | Messages tied to accounts and clients |
 
 ---
 
 ## 🚀 Features
 
-- **Deposits** — Add funds to any account
-- **Withdrawals** — Withdraw with balance validation
-- **Transfers** — Move funds between accounts
-- **Transaction History** — Full audit trail of all operations
-- **DAO Pattern** — Decoupled persistence logic across 5+ entity types
-- **Repository Pattern** — Centralized, typed query classes reducing boilerplate
-- **JDBC Integration** — Direct database connectivity with parameterized queries
+- **5 Account Types** — Checking, Savings, Credit, Line of Credit, Foreign Currency
+- **3 Transaction Types** — Deposit, Withdrawal, Transfer (with destination account)
+- **Client Portal** — Login with firstname + PIN, view accounts, perform transactions, view history
+- **Manager Dashboard** — Create/remove clients, open/close accounts, view all clients
+- **Notification System** — Alerts for deposits, negative balances, and more
+- **Interface Contracts** — `IBankClient`, `IBankManager`, `INotification`, `IBankAccountRepository`, `IBankClientRepository`, `IBankManagerRepository`, `ITransactionRepository`, `INotificationRepository`
+- **PIN Validation** — 4-digit PIN enforced via `CHECK` constraint with regex
 
 ---
 
@@ -71,7 +108,7 @@ The Swing GUI connects directly to the JDBC backend through typed repository cla
 
 - Java JDK 8+
 - Oracle SQL Database
-- IDE (IntelliJ IDEA / Eclipse)
+- Eclipse / IntelliJ IDEA
 
 ### Setup
 
@@ -79,9 +116,18 @@ The Swing GUI connects directly to the JDBC backend through typed repository cla
    ```bash
    git clone https://github.com/safwan-islam/Fortis-Bank.git
    ```
-2. Import the project into your IDE
-3. Configure the Oracle SQL connection in the data layer
-4. Run the application
+2. Run `fortisbankdb.sql` in Oracle SQL to create all tables and seed data
+3. Import the project into your IDE
+4. Update `DatabaseConnection.java` with your Oracle credentials
+5. Run `BankAppLoginSwing.java`
+
+### Default Credentials
+
+| User | Login | PIN/Role |
+|:-----|:------|:---------|
+| Client 1 | Safwan | `1234` |
+| Client 2 | Houria | `5678` |
+| Manager | Admin Fortis | Gestionnaire |
 
 ---
 
